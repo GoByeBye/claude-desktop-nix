@@ -16,14 +16,25 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 REDIRECT_URL="https://claude.ai/api/desktop/linux/x64/deb/latest/redirect"
-UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 PKG="package.nix"
 
-# Resolve the redirect to the final versioned URL. `-r 0-0` requests only the
-# first byte so we don't pull the whole ~150MB .deb just to read its URL.
-final_url=$(curl -fsSL -A "$UA" -r 0-0 -o /dev/null -w '%{url_effective}' "$REDIRECT_URL")
+# The endpoint answers with a 307 whose Location header already holds the full
+# versioned .deb URL, so we read that header directly instead of following the
+# redirect to the CDN (avoids a needless ranged request that could also fail).
+# claude.ai is behind Cloudflare; send a full browser-like header set and retry
+# so a transient bot-score bump doesn't fail the run.
+final_url=$(curl -fsS -A "$UA" --max-redirs 0 \
+  -H 'Accept: */*' \
+  -H 'Accept-Language: en-US,en;q=0.9' \
+  -H 'Sec-Fetch-Dest: document' \
+  -H 'Sec-Fetch-Mode: navigate' \
+  -H 'Sec-Fetch-Site: none' \
+  --retry 4 --retry-delay 5 --retry-all-errors \
+  -D - -o /dev/null "$REDIRECT_URL" \
+  | tr -d '\r' | sed -nE 's/^[Ll]ocation:[[:space:]]*(.+)$/\1/p' | head -n1)
 if [[ "$final_url" != *"/Claude-"*.deb ]]; then
-  echo "error: unexpected redirect target: $final_url" >&2
+  echo "error: unexpected redirect target: '$final_url'" >&2
   exit 1
 fi
 
