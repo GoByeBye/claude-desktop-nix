@@ -16,7 +16,12 @@
       packages = forAllSystems (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          # Claude Desktop is proprietary (unfree); allow it so the package
+          # output builds directly (`nix run`/`nix build`) without --impure.
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
         in
         rec {
           claude-desktop = pkgs.callPackage ./package.nix { };

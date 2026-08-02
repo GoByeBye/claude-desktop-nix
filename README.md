@@ -57,7 +57,7 @@ environment.systemPackages = [ pkgs.claude-desktop ];
 ## Try it directly
 
 ```sh
-NIXPKGS_ALLOW_UNFREE=1 nix run --impure github:GoByeBye/claude-desktop-nix
+nix run github:GoByeBye/claude-desktop-nix
 ```
 
 ## Upgrading
