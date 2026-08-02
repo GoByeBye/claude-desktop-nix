@@ -62,16 +62,38 @@ nix run github:GoByeBye/claude-desktop-nix
 
 ## Upgrading
 
-### Automatic
+### Scripted
 
-A GitHub Actions workflow ([`.github/workflows/update.yml`](./.github/workflows/update.yml))
-checks for new releases weekly (and on manual dispatch). When Anthropic ships a
-new version it bumps `version`/`url`/`hash`, verifies `nix build` still passes,
-and opens a pull request — so each release lands as its own reviewable change.
+Two scripts keep the pin current (both need `nix` and `curl`):
 
-Run the same logic locally any time with [`./update.sh`](./update.sh) (needs
-`nix` and `curl`); it edits `package.nix` in place only when a newer version
-exists.
+- [`./update.sh`](./update.sh) — bumps `version`/`url`/`hash` in `package.nix`
+  in place, only when a newer release exists. Pure: no git, no build.
+- [`./auto-update.sh`](./auto-update.sh) — runs `update.sh`, then (on a change)
+  verifies `nix build` passes, commits, and pushes. `--no-push` stops before
+  pushing; `--no-git` just bumps + builds.
+
+> **Why not GitHub Actions?** Anthropic's release endpoint sits behind
+> Cloudflare, which 403s datacenter IPs — so GitHub-hosted runners can't reach
+> it. Run these from a machine on a normal (residential) IP instead.
+
+Schedule `auto-update.sh` however you like. A weekly cron entry:
+
+```cron
+0 7 * * 1  cd /path/to/claude-desktop-nix && ./auto-update.sh >> /tmp/claude-update.log 2>&1
+```
+
+Or a NixOS systemd timer:
+
+```nix
+systemd.user.services.claude-desktop-update = {
+  script = "${pkgs.git}/bin/git -C /path/to/claude-desktop-nix pull --ff-only && /path/to/claude-desktop-nix/auto-update.sh";
+  path = with pkgs; [ nix git curl coreutils gnused ];
+};
+systemd.user.timers.claude-desktop-update = {
+  wantedBy = [ "timers.target" ];
+  timerConfig = { OnCalendar = "weekly"; Persistent = true; };
+};
+```
 
 ### Manual
 
