@@ -42,7 +42,18 @@
   libnotify,
   libseccomp,
   libcap_ng,
-  xorg,
+  libx11,
+  libxcb,
+  libxcomposite,
+  libxdamage,
+  libxext,
+  libxfixes,
+  libxrandr,
+  libxi,
+  libxcursor,
+  libxrender,
+  libxtst,
+  libxscrnsaver,
   # runtime (dlopen'd) — GPU / Vulkan / VA-API / Wayland
   libglvnd,
   vulkan-loader,
@@ -94,18 +105,18 @@ stdenv.mkDerivation (finalAttrs: {
     libnotify
     libseccomp # virtiofsd (cowork VM helper)
     libcap_ng # virtiofsd (cowork VM helper)
-    xorg.libX11
-    xorg.libxcb
-    xorg.libXcomposite
-    xorg.libXdamage
-    xorg.libXext
-    xorg.libXfixes
-    xorg.libXrandr
-    xorg.libXi
-    xorg.libXcursor
-    xorg.libXrender
-    xorg.libXtst
-    xorg.libXScrnSaver
+    libx11
+    libxcb
+    libxcomposite
+    libxdamage
+    libxext
+    libxfixes
+    libxrandr
+    libxi
+    libxcursor
+    libxrender
+    libxtst
+    libxscrnsaver
   ];
 
   # dlopen'd at runtime (not in NEEDED) — baked into RPATH so GPU, Vulkan,
